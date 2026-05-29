@@ -1,6 +1,10 @@
 # auth-service
 
-Auth service em NestJS com `@nestjs/microservices`, Prisma, PostgreSQL, JWT e Argon2.
+Authentication service built with NestJS, `@nestjs/microservices`, Prisma, PostgreSQL, JWT, and Argon2.
+
+## Environment
+
+Use `.env.example` as the reference for the local development environment variables.
 
 ## Endpoints
 
@@ -19,11 +23,11 @@ npm run prisma:generate
 npm run prisma:migrate:dev
 ```
 
-## Topico demo
+## Demo Topic
 
 - `auth.demo.event.v1`
 
-## Eventos gravados em outbox
+## Events Stored In Outbox
 
 - `auth.user.registered.v1`
 - `auth.user.password_changed.v1`
