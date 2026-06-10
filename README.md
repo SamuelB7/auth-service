@@ -1,6 +1,12 @@
 # auth-service
 
+Responsible for identity, authentication, sessions, roles, access control, and identity events.
+
 Authentication service built with NestJS, `@nestjs/microservices`, Prisma, PostgreSQL, JWT, and Argon2.
+
+## Project Origin
+
+This microservice is part of the [ecommerce-eda](https://github.com/SamuelB7/ecommerce-eda) event-driven marketplace platform.
 
 ## Environment
 
