@@ -6,17 +6,76 @@ datasource db {
   provider = "postgresql"
 }
 
+enum UserStatus {
+  ACTIVE
+  DEACTIVATED
+  DELETION_REQUESTED
+}
+
+enum Role {
+  CUSTOMER
+  SELLER
+  SUPPORT
+  ADMIN
+}
+
+enum MfaFactorType {
+  EMAIL_OTP
+}
+
+enum MfaFactorStatus {
+  PENDING
+  ENABLED
+  DISABLED
+}
+
+enum MfaChallengePurpose {
+  ENROLLMENT
+  SIGNIN
+}
+
+enum AccountClosureType {
+  DEACTIVATION
+  DELETION_REQUEST
+}
+
+enum AccountClosureStatus {
+  REQUESTED
+}
+
 model User {
-  id                String         @id @default(cuid())
-  email             String         @unique
-  name              String?
-  passwordHash      String
-  passwordChangedAt DateTime?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  refreshTokens     RefreshToken[]
+  id                     String                  @id @default(cuid())
+  email                  String                  @unique
+  name                   String?
+  passwordHash           String
+  status                 UserStatus              @default(ACTIVE)
+  emailVerifiedAt        DateTime?
+  passwordChangedAt      DateTime?
+  deactivatedAt          DateTime?
+  deletionRequestedAt    DateTime?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  refreshTokens          RefreshToken[]
+  roles                  UserRole[]
+  passwordResetTokens    PasswordResetToken[]
+  mfaFactors             MfaFactor[]
+  mfaChallenges          MfaChallenge[]
+  accountClosureRequests AccountClosureRequest[]
 
   @@map("users")
+}
+
+model UserRole {
+  id              String   @id @default(cuid())
+  userId          String
+  role            Role
+  grantedByUserId String?
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+  @@index([role])
+  @@map("user_roles")
 }
 
 model RefreshToken {
@@ -34,6 +93,71 @@ model RefreshToken {
   @@map("refresh_tokens")
 }
 
+model PasswordResetToken {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+model MfaFactor {
+  id         String          @id @default(cuid())
+  userId     String
+  type       MfaFactorType
+  target     String
+  status     MfaFactorStatus @default(PENDING)
+  verifiedAt DateTime?
+  disabledAt DateTime?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenges MfaChallenge[]
+
+  @@unique([userId, type, target])
+  @@index([status])
+  @@map("mfa_factors")
+}
+
+model MfaChallenge {
+  id            String              @id @default(cuid())
+  userId        String
+  factorId      String?
+  purpose       MfaChallengePurpose
+  challengeHash String
+  expiresAt     DateTime
+  verifiedAt    DateTime?
+  consumedAt    DateTime?
+  createdAt     DateTime            @default(now())
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  factor        MfaFactor?          @relation(fields: [factorId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([factorId])
+  @@index([expiresAt])
+  @@map("mfa_challenges")
+}
+
+model AccountClosureRequest {
+  id          String               @id @default(cuid())
+  userId      String
+  type        AccountClosureType
+  status      AccountClosureStatus @default(REQUESTED)
+  reason      String?
+  createdAt   DateTime             @default(now())
+  completedAt DateTime?
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("account_closure_requests")
+}
+
 model OutboxEvent {
   id          String    @id @default(cuid())
   topic       String
@@ -46,4 +170,3 @@ model OutboxEvent {
   @@index([publishedAt])
   @@map("outbox_events")
 }
-
